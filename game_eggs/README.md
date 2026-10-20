@@ -109,6 +109,8 @@
 
 [Minetest](minetest) (including MTG)
 
+[OblivionMP](oblivionmp)
+
 [OpenArena](openarena)
 
 [OpenRA](openra)

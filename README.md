@@ -213,6 +213,8 @@ If you are reading this it looks like you are looking to add an egg to your serv
     * [GeyserMC](game_eggs/minecraft/proxy/cross_platform/geyser)
     * [Waterdog](game_eggs/minecraft/proxy/cross_platform/waterdog)
 
+[OblivionMP](game_eggs/oblivionmp)
+
 [OpenArena](game_eggs/openarena)
 
 * [openarena](game_eggs/openarena/openarena)

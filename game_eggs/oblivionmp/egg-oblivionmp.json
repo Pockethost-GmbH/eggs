@@ -1,0 +1,131 @@
+{
+    "_comment": "Pockethost OblivionMP release candidate; see README for validation status.",
+    "meta": {
+        "version": "PTDL_v2",
+        "update_url": null
+    },
+    "name": "OblivionMP",
+    "author": "operations@pockethost.cloud",
+    "description": "Oblivion Remastered multiplayer by ReadyM. Linux x64 server 1.0.0-rc.2 with bundled SDK and mods. Beta software; requires the ReadyM Launcher.",
+    "features": [],
+    "docker_images": {
+        "Pockethost Base (.NET 10)": "213777488560.dkr.ecr.eu-central-1.amazonaws.com/game-images/pterodactyl/base@sha256:9d3bbc945d2d6545ac44e1d6059afb0391d12a203e984d76cd6a3d0300f037d3"
+    },
+    "file_denylist": [],
+    "startup": "exec ./server",
+    "config": {
+        "files": "{\n    \"config.json\": {\n        \"parser\": \"json\",\n        \"find\": {\n            \"Server.Port\": \"{{server.build.default.port}}\",\n            \"Server.Password\": \"{{env.SERVER_PASSWORD}}\",\n            \"ServerList.Enabled\": \"{{env.LISTING_ENABLED}}\",\n            \"ServerList.Name\": \"{{env.SERVER_NAME}}\",\n            \"ServerList.Gamemode\": \"{{env.GAMEMODE}}\",\n            \"ServerList.MaxPlayers\": \"{{env.MAX_PLAYERS}}\",\n            \"ServerList.PublicHost\": \"{{env.PUBLIC_HOST}}\",\n            \"ServerList.PublicPort\": \"{{server.build.default.port}}\",\n            \"ServerList.Description\": \"{{env.SERVER_DESCRIPTION}}\",\n            \"ServerList.Country\": \"{{env.COUNTRY}}\",\n            \"ServerList.LicenseKey\": \"{{env.LICENSE_KEY}}\",\n            \"Telemetry.OptOut\": \"{{env.TELEMETRY_OPT_OUT}}\"\n        }\n    }\n}",
+        "startup": "{\n    \"done\": \"Running server on port\"\n}",
+        "logs": "{}",
+        "stop": "^SIGINT"
+    },
+    "scripts": {
+        "installation": {
+            "script": "#!/bin/bash\nset -euo pipefail\n\n# This release's SDK and bundled mods must be installed together.\nreadonly RELEASE_URL='https://readycodestorage.blob.core.windows.net/oblivion-server-releases/oblivion-server-linux64-1.0.0-rc.2.zip'\nreadonly RELEASE_SHA256='a14f73b5352e6acf5f4813f2c1a10a255d2789f564b6e7fe33fb15bbff92957a'\n\napt-get update\napt-get install -y --no-install-recommends ca-certificates curl unzip\n\nmkdir -p /mnt/server\ncd /mnt/server\nstaging=$(mktemp -d)\ntrap 'rm -rf \"$staging\"' EXIT\ncurl --fail --location --show-error --silent \"$RELEASE_URL\" -o \"$staging/server.zip\"\nprintf '%s  %s\\n' \"$RELEASE_SHA256\" \"$staging/server.zip\" | sha256sum --check --status\nunzip -tq \"$staging/server.zip\"\n\n# Restore release-owned files without deleting custom mods or persistent state.\n# The bundled mod folders belong to this release; put custom mods in other folders.\nunzip -oq \"$staging/server.zip\" -d /mnt/server -x config.json 'saves/*' 'data/*'\nif [ ! -e config.json ]; then\n    unzip -p \"$staging/server.zip\" config.json > config.json\nfi\nmkdir -p saves data\nchmod 755 server\nprintf '%s\\n' 'OblivionMP 1.0.0-rc.2 installed.'\n",
+            "container": "ghcr.io/parkervcp/installers:debian",
+            "entrypoint": "bash"
+        }
+    },
+    "variables": [
+        {
+            "name": "Server Name",
+            "description": "Name shown in the ReadyM Launcher.",
+            "env_variable": "SERVER_NAME",
+            "default_value": "Pockethost OblivionMP",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string|max:50",
+            "field_type": "text"
+        },
+        {
+            "name": "Server Password",
+            "description": "Optional join password. Empty permits joining without a password.",
+            "env_variable": "SERVER_PASSWORD",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string",
+            "field_type": "text"
+        },
+        {
+            "name": "Maximum Players",
+            "description": "Connection limit. Capacity must be measured before raising this limit.",
+            "env_variable": "MAX_PLAYERS",
+            "default_value": "8",
+            "user_viewable": true,
+            "user_editable": false,
+            "rules": "required|integer|min:1|max:64",
+            "field_type": "text"
+        },
+        {
+            "name": "Public Listing",
+            "description": "Set true to list in ReadyM. Configure Public Host before enabling.",
+            "env_variable": "LISTING_ENABLED",
+            "default_value": "false",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string|in:true,false",
+            "field_type": "text"
+        },
+        {
+            "name": "Public Host",
+            "description": "Publicly routable IP or hostname for this allocation. Do not use a container or private address.",
+            "env_variable": "PUBLIC_HOST",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string|max:253",
+            "field_type": "text"
+        },
+        {
+            "name": "Game Mode",
+            "description": "Listing label only; this does not install a game mode.",
+            "env_variable": "GAMEMODE",
+            "default_value": "Co-op",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string|max:15",
+            "field_type": "text"
+        },
+        {
+            "name": "Description",
+            "description": "Optional description shown in the Launcher.",
+            "env_variable": "SERVER_DESCRIPTION",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string|max:300",
+            "field_type": "text"
+        },
+        {
+            "name": "Country",
+            "description": "Optional two-letter uppercase country code, such as DE.",
+            "env_variable": "COUNTRY",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string|regex:/^[A-Z]{2}$/",
+            "field_type": "text"
+        },
+        {
+            "name": "Verification License",
+            "description": "Optional ReadyM verification key. Treat it as a secret; it is not required for an unverified listing.",
+            "env_variable": "LICENSE_KEY",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string",
+            "field_type": "text"
+        },
+        {
+            "name": "Telemetry Opt Out",
+            "description": "Set true to disable anonymous ReadyM telemetry.",
+            "env_variable": "TELEMETRY_OPT_OUT",
+            "default_value": "false",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string|in:true,false",
+            "field_type": "text"
+        }
+    ]
+}
